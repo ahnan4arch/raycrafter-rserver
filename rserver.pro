@@ -3,7 +3,7 @@ CONFIG += console
 CONFIG -= app_bundle
 QT += core gui widgets
 
-SOURCES += main.cpp \
+SOURCES += src/main.cpp \
     src/WebsocketServer.cpp \
     src/jsmn/jsmn.c
 
@@ -15,7 +15,6 @@ INCLUDEPATH += include
 HEADERS += \
     include/WebsocketServer.h \
     include/jsmn/jsmn.h
-
 
 
 

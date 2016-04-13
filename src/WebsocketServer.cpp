@@ -153,7 +153,7 @@ void WebsocketServer::on_close(websocketpp::connection_hdl hdl)
 
 void WebsocketServer::on_message(websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg)
 {
-	std::cout << "on_message\n";std::flush(std::cout);
+	std::cout << "WebsocketServer::on_message\n";std::flush(std::cout);
 	std::string id;
 	if( !getId(hdl, id) )
 	{
