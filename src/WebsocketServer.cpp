@@ -103,6 +103,11 @@ void WebsocketServer::stop()
 		}
 	}
 
+	websocketsLock.lock();
+	g_id_to_socket.clear();
+	g_socket_to_id.clear();
+	websocketsLock.unlock();
+
 	// Stop the endpoint.
 	server.stop();
 }
@@ -147,6 +152,19 @@ void WebsocketServer::on_fail(websocketpp::connection_hdl hdl)
 
 void WebsocketServer::on_close(websocketpp::connection_hdl hdl)
 {
+	std::string id;
+	if( !getId(hdl, id) )
+	{
+		std::cout << "WebsocketServer::on_close: unable to retrieve id from socket.\n";std::flush(std::cout);
+		return;
+	}
+
+	// Remove websocket from the map.
+	websocketsLock.lock();
+	g_id_to_socket.erase(id);
+	g_socket_to_id.erase(hdl);
+	websocketsLock.unlock();
+
 	std::cout << "on_close\n";std::flush(std::cout);
 	// Websocket connection closed.
 }
@@ -228,7 +246,7 @@ bool WebsocketServer::sendData(std::string id, std::string data)
 	}
 
 	websocketpp::lib::error_code ec;
-	server.send(hdl, data, websocketpp::frame::opcode::BINARY, ec); // send text message.
+	server.send(hdl, data, websocketpp::frame::opcode::BINARY, ec); // send binary message
 	if (ec)
 	{ // we got an error
 		// Error sending on websocket. Log reason using ec.message().
@@ -239,12 +257,32 @@ bool WebsocketServer::sendData(std::string id, std::string data)
 	return true;
 }
 
+bool WebsocketServer::broadcastData(std::string data)
+{
+	bool result = true;
+	websocketsLock.lock();
+	for(auto&it:g_id_to_socket)
+	{
+		websocketpp::lib::error_code ec;
+		server.send(it.second, data, websocketpp::frame::opcode::BINARY, ec); // send binary message.
+		if (ec)
+		{ // we got an error
+			// Error sending on websocket. Log reason using ec.message().
+			std::cout << "WebsocketServer::broadcastData: Error sending on websocket: " + ec.message();std::flush(std::cout);
+			result = false;
+		}
+	}
+	websocketsLock.unlock();
+	return result;
+}
+
 bool WebsocketServer::sendClose(std::string id)
 {
 	websocketpp::connection_hdl hdl;
 	if (!getWebsocket(id, hdl))
 	{
 		// Closing non-existing websocket failed.
+		std::cout << "WebsocketServer::sendClose: closing non-existing websocket failed: \n";std::flush(std::cout);
 		return false;
 	}
 
@@ -254,6 +292,7 @@ bool WebsocketServer::sendClose(std::string id)
 	if (ec)
 	{ // we got an error
 		// Error closing websocket. Log reason using ec.message().
+		std::cout << "WebsocketServer::sendClose: Error closing websocket: " + ec.message();std::flush(std::cout);
 		return false;
 	}
 
@@ -264,6 +303,8 @@ bool WebsocketServer::sendClose(std::string id)
 	g_socket_to_id.erase(hdl);
 	//pthread_rwlock_unlock(&websocketsLock);
 	websocketsLock.unlock();
+
+	std::cout << g_id_to_socket.size() << " "<< g_socket_to_id.size() << std::endl;std::flush(std::cout);
 
 	return true;
 }
