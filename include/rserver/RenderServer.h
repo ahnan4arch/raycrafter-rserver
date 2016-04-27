@@ -3,23 +3,25 @@
 
 #include <thread>
 #include <algorithm>
+#include <functional>
 #include <rserver/WebsocketServer.h>
 
 
-
 void write_jpeg_to_memory( int width, int height, const unsigned char* rgb_data, std::string& output );
-void write_jpeg_to_file( int width, int height, const unsigned char* rgb_data );
+void write_jpeg_to_file( const char* filename, int width, int height, const unsigned char* rgb_data );
 
 
 struct ProgressiveRendererInterface
 {
-	virtual void advance()=0;
-	virtual float *getRGBData( int& width, int& height )=0;
+	typedef std::function<void(void)> ProgressCallback;
+	//typedef std::function<void(int, int, unsigned char*)> SendImageCallback;
+
+	virtual void setProgressCallback(ProgressCallback callback)=0;
+	virtual void getImageResolution(int& width, int& height)=0;
+	virtual void copyRGBData( unsigned char* rgb_data, int& width, int& height )=0;
+	//virtual void copyRGBData( float *rgb_data )=0;
 	virtual void receiveMessage( const std::string& id, const std::string& message )=0;
 };
-
-
-
 
 
 class RenderServer
@@ -27,26 +29,16 @@ class RenderServer
 public:
 	RenderServer( ProgressiveRendererInterface* renderer ):
 		server_thread(0),
-		render_thread(0),
 		m_renderer(renderer)
 	{
 		WebsocketServer::init();
 		WebsocketServer::setMessageCallback( std::bind( &RenderServer::on_message, this, std::placeholders::_1, std::placeholders::_2) );
+		renderer->setProgressCallback( std::bind( &RenderServer::on_progress, this) );
 	}
 
 	~RenderServer()
 	{
 		stop();
-	}
-
-	ProgressiveRendererInterface* lock()
-	{
-		m_renderer_access_lock.lock();
-		return m_renderer;
-	}
-	void unlock()
-	{
-		m_renderer_access_lock.unlock();
 	}
 
 
@@ -59,12 +51,7 @@ public:
 			return;
 		}
 		server_thread = new std::thread(WebsocketServer::run);
-		std::cout << "WebSocketServerGUI::start_server: server started\n";std::flush(std::cout);
-
-		// start renderthread ---
-		m_render_thread_done = false;
-		render_thread = new std::thread(std::bind(&RenderServer::render_loop, this));
-
+		std::cout << "RenderServer::start: server running...\n";std::flush(std::cout);
 	}
 
 	void stop()
@@ -79,44 +66,41 @@ public:
 		delete server_thread;
 		server_thread = 0;
 		std::cout << "WebSocketServerGUI::stop_server: server stopped\n";std::flush(std::cout);
-
-		// tell the renderthread that we are done...
-		m_render_thread_done = true;
-
-		// join render thread...
-		render_thread->join();
-		delete render_thread;
-		render_thread = 0;
-		std::cout << "WebSocketServerGUI::stop_server: renderloop stopped\n";std::flush(std::cout);
-
 	}
 
 	void on_message( const std::string& id, const std::string& message )
 	{
-		lock();
 		m_renderer->receiveMessage(id, message);
-		unlock();
 	}
 
-public:
-private:
-
-	void render_loop()
+	void on_progress()
 	{
-		while(!m_render_thread_done)
+		// get image data (float) and prepare sending to clients ---
+		//int width,height;
+		//m_renderer->getImageResolution( width, height );
+
+
+
+		int max_width = 512;
+		int max_height = 512;
+		std::vector<unsigned char> rgb_data(max_width*max_height*3);
+		int width, height;
+		m_renderer->copyRGBData(&rgb_data[0], width, height);
+
+		// convert to jpeg in memory
+		std::string image_data;
+		if( (width!=0) && (height!=0))
+			write_jpeg_to_memory( width, height, &rgb_data[0], image_data );
+
+		/*
+		std::vector<float> rgb_data_linear(width*height*3);
+		m_renderer->copyRGBData(&rgb_data_linear[0]);
+
+		std::string image_data;
 		{
-			ProgressiveRendererInterface* rinfo = lock();
-
-			// run one iteration ---
-			rinfo->advance();
-
-			// get image data (float) and prepare sending to clients ---
-			int width,height;
-			float* rgb_data = rinfo->getRGBData(width, height);
-
 			// convert from linear to srgb and apply exposure
 			std::vector<unsigned char> rgb_data_srgb(width*height*3, 0);
-			std::transform( rgb_data, rgb_data+width*height*3, rgb_data_srgb.begin(),
+			std::transform( rgb_data_linear.begin(), rgb_data_linear.end(), rgb_data_srgb.begin(),
 								[](float value_linear)
 								{
 									float value_srgb = 0;
@@ -129,24 +113,19 @@ private:
 								});
 
 			// convert to jpeg in memory
-			std::string image_data;
 			write_jpeg_to_memory( width, height, &rgb_data_srgb[0], image_data );
-
-			unlock();
-
-			// send data ---
-			//WebsocketServer::sendData( "test", image_data );
-			WebsocketServer::broadcastData( image_data );
 		}
-		std::cout << "done rendering "  << std::endl;std::flush(std::cout);
+		*/
+
+		// send data ---
+		if(!image_data.empty())
+			WebsocketServer::broadcastData( image_data );
 	}
 
-
+public:
+private:
 	std::thread* server_thread;
-	std::thread* render_thread;
 	ProgressiveRendererInterface* m_renderer;
-	std::mutex m_renderer_access_lock;
-	bool m_render_thread_done;
 };
 
 /*

@@ -38,8 +38,6 @@ private:
 	static std::map<websocketpp::connection_hdl, std::string, std::owner_less<websocketpp::connection_hdl>> g_socket_to_id;
 
 	static MessageCallback g_message_callback;
-	//static LogStream ls;
-	//static std::ostream os;
 
 	// callbacks
 	static bool on_validate(websocketpp::connection_hdl hdl);

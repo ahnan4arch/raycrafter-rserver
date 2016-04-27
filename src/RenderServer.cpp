@@ -1,4 +1,4 @@
-#include <RenderServer.h>
+#include <rserver/RenderServer.h>
 
 
 
@@ -11,15 +11,13 @@
 
 
 
-
-
 // expecting 8bit per channel
-void write_jpeg_to_file( int width, int height, const unsigned char* rgb_data )
+void write_jpeg_to_file( const char* filename, int width, int height, const unsigned char* rgb_data )
 {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr       jerr;
 
-	FILE* outfile = fopen("c:/projects/msc/test.jpeg", "wb");
+	FILE* outfile = fopen(filename, "wb");
 
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);

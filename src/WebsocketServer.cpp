@@ -1,4 +1,4 @@
-#include <WebsocketServer.h>
+#include <rserver/WebsocketServer.h>
 
 
 #include <thread>
@@ -17,7 +17,7 @@ WebsocketServer::MessageCallback WebsocketServer::g_message_callback;
 
 bool WebsocketServer::init()
 {
-	std::cout << "init\n";std::flush(std::cout);
+	//std::cout << "init\n";std::flush(std::cout);
 
 
 	// Initialising WebsocketServer.
@@ -67,20 +67,20 @@ void WebsocketServer::setMessageCallback( MessageCallback message_callback )
 
 void WebsocketServer::run()
 {
-	std::cout << "run\n";std::flush(std::cout);
+	//std::cout << "run\n";std::flush(std::cout);
 	try
 	{
 		server.run();
 	} catch(websocketpp::exception const &e)
 	{
 		// Websocket exception. Get message via e.what().
-		std::cout << "exception\n";
+		//std::cout << "WebsocketServer::run::exception\n";
 	}
 }
 
 void WebsocketServer::stop()
 {
-	std::cout << "stop\n";std::flush(std::cout);
+	//std::cout << "stop\n";std::flush(std::cout);
 	// Stopping the Websocket listener and closing outstanding connections.
 	websocketpp::lib::error_code ec;
 	server.stop_listening(ec);
@@ -115,11 +115,11 @@ void WebsocketServer::stop()
 
 bool WebsocketServer::on_validate(websocketpp::connection_hdl hdl)
 {
-	std::cout << "on_validate\n";std::flush(std::cout);
+	//std::cout << "on_validate\n";std::flush(std::cout);
 	websocketpp::server<websocketpp::config::asio>::connection_ptr con = server.get_con_from_hdl(hdl);
 	websocketpp::uri_ptr uri = con->get_uri();
 	std::string query = uri->get_query(); // returns empty string if no query string set.
-	std::cout << "WebsocketServer::on_validate querystring=" << query << std::endl;
+	//std::cout << "WebsocketServer::on_validate querystring=" << query << std::endl;
 	std::string id = "";
 	if (!query.empty())
 	{
@@ -144,7 +144,7 @@ bool WebsocketServer::on_validate(websocketpp::connection_hdl hdl)
 
 void WebsocketServer::on_fail(websocketpp::connection_hdl hdl)
 {
-	std::cout << "on_fail\n";std::flush(std::cout);
+	//std::cout << "on_fail\n";std::flush(std::cout);
 	websocketpp::server<websocketpp::config::asio>::connection_ptr con = server.get_con_from_hdl(hdl);
 	websocketpp::lib::error_code ec = con->get_ec();
 	// Websocket connection attempt by client failed. Log reason using ec.message().
@@ -165,13 +165,13 @@ void WebsocketServer::on_close(websocketpp::connection_hdl hdl)
 	g_socket_to_id.erase(hdl);
 	websocketsLock.unlock();
 
-	std::cout << "on_close\n";std::flush(std::cout);
+	//std::cout << "on_close\n";std::flush(std::cout);
 	// Websocket connection closed.
 }
 
 void WebsocketServer::on_message(websocketpp::connection_hdl hdl, websocketpp::server<websocketpp::config::asio>::message_ptr msg)
 {
-	std::cout << "WebsocketServer::on_message\n";std::flush(std::cout);
+	//std::cout << "WebsocketServer::on_message\n";std::flush(std::cout);
 	std::string id;
 	if( !getId(hdl, id) )
 	{

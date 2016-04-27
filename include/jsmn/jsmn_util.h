@@ -2,6 +2,7 @@
 #include <string>
 #include <cmath>
 #include <map>
+#include <vector>
 #include <jsmn/jsmn.h>
 
 
@@ -57,3 +58,42 @@ T jsmn_to_number( const std::string& json, jsmntok_t* t)
 	stream >> value;
 	return value;
 }
+
+
+inline std::string jsmn_trim_right (const std::string & s, const std::string & t = " \t\r\n");
+
+inline std::string jsmn_trim_left (const std::string & s, const std::string & t = " \t\r\n");
+
+inline std::string jsmn_trim (const std::string & s, const std::string & t = " \t\r\n");
+
+std::string jsmn_replace(std::string &s, const std::string& toReplace, const std::string& replaceWith);
+// split a line into the first word, and rest-of-the-line
+std::string jsmn_get_word (std::string & s, const std::string delim = " ",const bool trim_spaces = true);
+
+void jsmn_split_string( const std::string s, std::vector<std::string> & v, const std::string delim = " ", const bool trim_spaces = true);
+
+
+
+
+// ------------------- string - type conversion  ------------------
+template<class T>
+inline std::string jsmn_to_string(const T& t)
+{
+	std::ostringstream stream;
+	stream << t;
+	return stream.str();
+}
+
+template<class T>
+T jsmn_from_string(const std::string& s)
+{
+	std::istringstream stream (s);
+	T t;
+	stream >> t;
+	return t;
+}
+
+
+
+
+
