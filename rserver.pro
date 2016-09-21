@@ -11,11 +11,11 @@ TEMPLATE = lib
 CONFIG += staticlib
 
 SOURCES += \
-    src/jsmn/jsmn.c \
     src/main.cpp \
     src/RenderServer.cpp \
     src/WebsocketServer.cpp \
-    src/jsmn/jsmn_util.cpp
+    src/jsmn/jsmn_util.cpp \
+    src/jsmn/jsmn.cpp
 
 INCLUDEPATH += include
 

@@ -5,14 +5,11 @@
 
 
 #define ASIO_STANDALONE
-#define _WEBSOCKETPP_NOEXCEPT_TOKEN_
-#define _WEBSOCKETPP_CONSTEXPR_TOKEN_
+//#define _WEBSOCKETPP_NOEXCEPT_TOKEN_
+//#define _WEBSOCKETPP_CONSTEXPR_TOKEN_
+#define _WEBSOCKETPP_CPP11_STRICT_ // tells websocketpp that we have a full-featured c++11 compiler...
 #include <websocketpp/server.hpp>
 #include <websocketpp/config/asio_no_tls.hpp>
-
-
-
-
 
 class WebsocketServer
 {
